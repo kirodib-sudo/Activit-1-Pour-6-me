@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Restaurant Math — PGCD & PPCM (Cloud & Local Sync)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Arial,sans-serif;background:#171b2d;color:#fff;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center}
+#app{width:100vw;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+header{height:8vh;min-height:50px;background:#5b2c83;display:flex;align-items:center;justify-content:space-between;padding:0 2vw;font-weight:800;flex-shrink:0}
+header .title{font-size:clamp(12px,1.5vw,22px)} header .stats{font-size:clamp(10px,1.2vw,17px);display:flex;gap:0.8vw;align-items:center}
+#game{flex:1;display:flex;flex-direction:column;position:relative;background:linear-gradient(#f7c77e 0 12%,#f4e2bb 12% 78%,#a8653c 78%);overflow:hidden}
+
+#question{height:15%;min-height:60px;background:#fff;color:#222;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-shadow:0 4px 0 #d6a55e;z-index:5;padding:0 15px}
+#qBadge{background:#5b2c83;color:#fff;padding:2px 10px;border-radius:15px;font-size:12px;font-weight:bold;margin-bottom:2px}
+#qText{font-size:clamp(12px,1.7vw,20px);font-weight:900}
+
+#restaurant{flex:1;position:relative;overflow:hidden}
+.wall{position:absolute;left:3%;top:5%;width:94%;height:88%;border:6px solid #8a4f30;border-radius:15px;background:linear-gradient(#f8dfa8,#f4c879);box-shadow:inset 0 0 0 3px #fff6}
+.window{position:absolute;left:6%;top:8%;width:16%;height:20%;background:#7ec8e3;border:5px solid #70452e;border-radius:8px}
+.sign{position:absolute;right:6%;top:8%;background:#e95d49;padding:6px 12px;border-radius:10px;font-weight:900;font-size:clamp(11px,1.5vw,20px);box-shadow:0 3px #a83b2c}
+
+/* Counter & Trays - Enhanced readability for mobile */
+.counter{position:absolute;left:3%;bottom:8%;width:31%;height:24%;background:#b8663c;border:4px solid #774129;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;font-size:clamp(11px,1.4vw,16px);font-weight:900;color:#111;z-index:2}
+.tray-box{background:#fff;padding:4px 10px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,0.3);margin:3px 0;display:flex;gap:8px;align-items:center;max-width:100%;font-size:clamp(14px,1.9vw,22px);font-weight:900;color:#000}
+
+/* Tables Zones */
+.table-zone{position:absolute;bottom:32%;display:flex;justify-content:space-between;left:4%;right:4%;align-items:flex-end;z-index:3}
+.table-group{background:#9c5b3d;border:3px solid #70402b;border-radius:12px;padding:6px;text-align:center;min-width:120px;max-width:48%;box-shadow:0 4px 8px rgba(0,0,0,0.3);overflow-y:auto;max-height:30vh}
+.table-title{font-size:11px;font-weight:bold;color:#fff;margin-bottom:3px}
+.clients-row{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+
+.client{background:#fff;color:#222;border:2px solid #70402b;border-radius:8px;padding:3px;text-align:center;min-width:44px;font-size:clamp(16px,2.3vw,26px);box-shadow:0 2px 4px rgba(0,0,0,0.2)}
+.client .plate{display:block;font-size:clamp(9px,1.2vw,13px);background:#f4e2bb;color:#111;border-radius:5px;padding:2px 4px;margin-top:2px;font-weight:900;white-space:nowrap}
+
+#chef{position:absolute;left:28%;bottom:18%;font-size:clamp(34px,4.5vw,60px);z-index:10;transition:left 0.3s ease-in-out}
+
+/* Message & Modal boxes */
+#message{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);width:92%;max-width:800px;padding:12px 20px;border-radius:14px;background:rgba(255,255,255,0.98);color:#222;font-size:clamp(12px,1.5vw,18px);font-weight:800;display:none;z-index:25;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,0.5);border:3px solid #5b2c83}
+
+/* Answers Section */
+#answers{height:20%;min-height:55px;display:flex;align-items:center;justify-content:center;gap:1.2vw;padding:0.5vh 2vw;background:#27233b;flex-shrink:0}
+.answer{border:0;border-radius:14px;background:#fff;color:#29233c;font-weight:900;font-size:clamp(14px,1.8vw,24px);min-width:75px;padding:8px 14px;cursor:pointer;box-shadow:0 4px #b9b3ca;transition:transform 0.1s}
+.answer:active{transform:translateY(3px);box-shadow:0 1px #b9b3ca}.answer:disabled{opacity:.5;cursor:not-allowed}
+
+/* Start Modal & Leaderboard */
+#overlay{position:fixed;inset:0;background:#111d;display:flex;align-items:center;justify-content:center;z-index:100;padding:15px}
+.modal{max-width:850px;width:100%;background:#fff;color:#222;border-radius:18px;padding:18px;text-align:center;box-shadow:0 10px 35px #0008;max-height:95dvh;overflow-y:auto}
+.modal h1{margin-top:0;font-size:clamp(18px,2.5vw,26px);color:#5b2c83}
+.modal input, .modal select{width:100%;padding:8px;font-size:14px;margin:5px 0;border:2px solid #5b2c83;border-radius:8px;text-align:center}
+#startBtn{border:0;background:#5b2c83;color:#fff;border-radius:10px;padding:10px 24px;font-size:16px;font-weight:900;cursor:pointer;margin-top:6px;width:100%}
+
+.leaderboard-box{background:#f4e2bb;border:2px solid #8a4f30;border-radius:10px;padding:8px;text-align:left;font-size:12px;color:#222}
+.leaderboard-box h3{margin:0 0 5px 0;color:#5b2c83;text-align:center;font-size:13px}
+.tabs{display:flex;justify-content:center;gap:5px;margin-bottom:5px}
+.tab-btn{background:#d6a55e;border:0;padding:3px 8px;border-radius:5px;font-weight:bold;cursor:pointer;font-size:11px;color:#222}
+.tab-btn.active{background:#5b2c83;color:#fff}
+.leaderboard-item{display:flex;justify-content:space-between;border-bottom:1px dashed #d6a55e;padding:3px 0}
+
+#rotate{display:none;position:fixed;z-index:1000;inset:0;background:#171b2d;color:white;align-items:center;justify-content:center;text-align:center;padding:20px;font-size:20px}
+@media(max-width:768px) and (orientation:portrait){#rotate{display:flex}#app{display:none}}
+</style>
+</head>
+<body>
+<div id="rotate">📱↔️<br><b>Tourne ton téléphone à l’horizontale</b><br>pour profiter pleinement du Restaurant Math !</div>
+
+<div id="app">
+<header>
+  <div class="title">🍽️ Restaurant Math — <span id="playerNameDisplay">Chef</span> (<span id="playerClassDisplay">6ème A</span>)</div>
+  <div class="stats">
+    <span>⏱️ <b id="roundTimer">00</b>s</span>
+    <span id="livesContainer">❤️❤️❤️❤️</span>
+    <span>⭐ <b id="score">0</b></span>
+    <span>Tour <b id="round">1</b>/10</span>
+    <button onclick="toggleFullscreen()" title="Plein écran (Mobile/PC)" style="background:#e95d49;color:#fff;border:0;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px;font-weight:bold;">⛶ Fullscreen</button>
+    <button onclick="openAdminModal()" title="Paramètres Admin" style="background:#8a4f30;color:#fff;border:0;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px;font-weight:bold;">⚙️ Admin</button>
+  </div>
+</header>
+<main id="game">
+<section id="question">
+  <div id="qBadge">PGCD</div>
+  <div id="qText">Chargement...</div>
+</section>
+<section id="restaurant">
+  <div class="wall"></div><div class="window"></div><div class="sign">LE DINER DES MATHS</div>
+  <div class="counter" id="counterDisplay">
+    <div style="font-size:11px; margin-bottom:2px; font-weight:900; color:#fff;" id="counterTitle">Comptoir / Réserve</div>
+    <div class="tray-box" id="trayBoxA"><span id="iconA">🍊</span> <span id="countA">12</span></div>
+    <div class="tray-box" id="trayBoxB"><span id="iconB">🍌</span> <span id="countB">18</span></div>
+  </div>
+  
+  <div class="table-zone" id="tableZone"></div>
+
+  <div id="chef">👨‍🍳</div>
+  <div id="message"></div>
+</section>
+<section id="answers"></section>
+</main>
+</div>
+
+<!-- Start Modal with Leaderboard -->
+<div id="overlay"><div class="modal">
+  <h1>🍽️ Le Diner des Mathématiques (Classement)</h1>
+  <p style="text-align:center;">Entre ton nom, choisis ta classe et ton niveau de difficulté :</p>
+  
+  <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-start; text-align:left; margin-top:8px;">
+    <div style="flex:1; min-width:240px;">
+      <label style="font-size:12px; font-weight:bold;">Nom du Chef :</label>
+      <input type="text" id="playerNameInput" placeholder="Ton prénom..." autocomplete="off">
+      <br>
+      <label style="font-size:12px; font-weight:bold;">Classe :</label>
+      <select id="playerClassInput">
+        <option value="6ème A">6ème A</option>
+        <option value="6ème B">6ème B</option>
+        <option value="6ème C">6ème C</option>
+        <option value="6ème D">6ème D</option>
+        <option value="6ème E">6ème E</option>
+      </select>
+      <br>
+      <label style="font-size:12px; font-weight:bold;">Difficulté :</label>
+      <select id="playerDifficultyInput" onchange="switchLeaderboardTab(this.value)">
+        <option value="facile">Facile (5 Vies, 30s max)</option>
+        <option value="moyen" selected>Moyen (4 Vies, 20s max)</option>
+        <option value="difficile">Difficile (3 Vies, 15s max)</option>
+      </select>
+      <br>
+      <button id="startBtn">Commencer le service</button>
+    </div>
+
+    <div style="flex:1; min-width:240px;">
+      <div class="leaderboard-box">
+        <h3>🏆 Top 10 (Cloud Sync)</h3>
+        <div class="tabs">
+          <button class="tab-btn" onclick="switchLeaderboardTab('facile')" id="tabFacile">Facile</button>
+          <button class="tab-btn active" onclick="switchLeaderboardTab('moyen')" id="tabMoyen">Moyen</button>
+          <button class="tab-btn" onclick="switchLeaderboardTab('difficile')" id="tabDifficile">Difficile</button>
+        </div>
+        <div id="leaderboardList" style="max-height:180px; overflow-y:auto;">Chargement des scores...</div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- Admin PIN Modal -->
+<div id="adminOverlay" style="position:fixed;inset:0;background:#111d;display:none;align-items:center;justify-content:center;z-index:200;padding:20px;">
+  <div style="background:#fff; color:#222; padding:18px; border-radius:15px; text-align:center; max-width:320px; width:100%;">
+    <h3 style="color:#5b2c83; margin-top:0;">🔒 Accès Administrateur</h3>
+    <p style="font-size:12px;">Entre le code PIN secret (0891) pour réinitialiser les scores :</p>
+    <input type="password" id="adminPinInput" placeholder="PIN..." style="width:100%; padding:8px; border:2px solid #5b2c83; border-radius:6px; text-align:center; margin-bottom:10px;">
+    <div style="display:flex; gap:10px;">
+      <button onclick="verifyAdminPin()" style="flex:1; background:#5b2c83; color:#fff; border:0; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer;">Valider</button>
+      <button onclick="closeAdminModal()" style="flex:1; background:#ccc; color:#222; border:0; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer;">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA0TmFki3wb0qNXdASU3T4ggBqDxw5RtBk",
+  authDomain: "activite-5-prim.firebaseapp.com",
+  projectId: "activite-5-prim",
+  storageBucket: "activite-5-prim.firebasestorage.app",
+  messagingSenderId: "406260781091",
+  appId: "1:406260781091:web:3d1d4953a601585e0a6196",
+  measurementId: "G-7JR2JE1V0X"
+};
+
+let db = null;
+let playerName = "Chef", playerClass = "6ème A", difficulty = "moyen";
+let lives = 4, maxLives = 4, score = 0, currentIdx = 0, totalRounds = 10;
+let busy = false, roundTimerInterval = null, timeLeft = 20;
+let currentRoundData = null, gameStartTime = 0;
+let currentActiveTab = 'moyen';
+let cloudScores = [];
+let unsubscribeSnapshot = null;
+
+const $= id => document.getElementById(id);
+
+window.toggleFullscreen = async function() {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch(e) {}
+};
+
+async function initFirebase() {
+  loadLeaderboard();
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    setupRealtimeLeaderboard();
+  } catch(e) {
+    console.warn("Firestore init warning:", e);
+  }
+}
+
+function setupRealtimeLeaderboard() {
+  if (!db) return;
+  if (unsubscribeSnapshot) unsubscribeSnapshot();
+
+  const colRef = collection(db, 'restaurant_math_scores_' + currentActiveTab);
+  
+  unsubscribeSnapshot = onSnapshot(colRef, (snapshot) => {
+    cloudScores = [];
+    snapshot.forEach(docSnap => {
+      cloudScores.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    loadLeaderboard();
+  }, (error) => {
+    console.warn("Snapshot warning:", error);
+  });
+}
+
+function loadLeaderboard() {
+  let listEl = $('leaderboardList');
+  if(!listEl) return;
+  
+  let localKey = 'restaurant_scores_' + currentActiveTab;
+  let localList = [];
+  try {
+    localList = JSON.parse(localStorage.getItem(localKey) || '[]');
+  } catch(e) {}
+
+  let combinedMap = new Map();
+  localList.forEach(item => {
+    combinedMap.set(`${item.name}_${item.score}_${item.time}`, item);
+  });
+  cloudScores.forEach(item => {
+    combinedMap.set(`${item.name}_${item.score}_${item.time}`, item);
+  });
+
+  let finalScores = Array.from(combinedMap.values());
+  
+  if(finalScores.length === 0){
+    listEl.innerHTML = `<div style="text-align:center; color:#555; padding:5px;">Aucun score enregistré en mode ${currentActiveTab}.</div>`;
+    return;
+  }
+  
+  finalScores.sort((a,b) => {
+    if(b.score !== a.score) return b.score - a.score;
+    return (a.time || 0) - (b.time || 0);
+  });
+
+  let html = '';
+  finalScores.slice(0, 10).forEach((item, idx) => {
+    let crown = (idx === 0) ? '🧑‍🍳 ' : `#${idx+1} `;
+    let t = item.time || 0;
+    let timeMin = Math.floor(t / 60).toString().padStart(2, '0');
+    let timeSec = (t % 60).toString().padStart(2, '0');
+    html += `<div class="leaderboard-item"><span><b>${crown}</b> ${item.name || 'Chef'} (${item.classe || '6ème A'})</span> <span>⭐ ${item.score} pts (⏱️ ${timeMin}:${timeSec})</span></div>`;
+  });
+  listEl.innerHTML = html;
+}
+
+window.switchLeaderboardTab = function(tab){
+  currentActiveTab = tab;
+  ['facile', 'moyen', 'difficile'].forEach(d => {
+    let btn = $(`tab${d.charAt(0).toUpperCase() + d.slice(1)}`);
+    if(btn) btn.className = (d === tab) ? 'tab-btn active' : 'tab-btn';
+  });
+  loadLeaderboard();
+  if (db) {
+    setupRealtimeLeaderboard();
+  }
+};
+
+async function saveScore(finalScore){
+  let totalTime = Math.floor((Date.now() - gameStartTime) / 1000);
+  let scoreData = {
+    name: playerName,
+    classe: playerClass,
+    diff: difficulty,
+    score: finalScore,
+    time: totalTime,
+    timestamp: Date.now()
+  };
+
+  currentActiveTab = difficulty;
+  ['facile', 'moyen', 'difficile'].forEach(d => {
+    let btn = $(`tab${d.charAt(0).toUpperCase() + d.slice(1)}`);
+    if(btn) btn.className = (d === currentActiveTab) ? 'tab-btn active' : 'tab-btn';
+  });
+
+  // Save locally
+  try {
+    let localKey = 'restaurant_scores_' + difficulty;
+    let existing = JSON.parse(localStorage.getItem(localKey) || '[]');
+    existing.push(scoreData);
+    localStorage.setItem(localKey, JSON.stringify(existing));
+  } catch(e) {}
+
+  // Save directly to cloud (no auth restriction needed since rules allow public read/write)
+  if (db) {
+    try {
+      const colRef = collection(db, 'restaurant_math_scores_' + difficulty);
+      await addDoc(colRef, scoreData);
+    } catch(e) {
+      console.warn("Cloud save error:", e);
+    }
+  }
+  loadLeaderboard();
+}
+
+window.openAdminModal = function(){
+  $('adminPinInput').value = '';$('adminOverlay').style.display = 'flex';
+};
+
+window.closeAdminModal = function(){
+  $('adminOverlay').style.display = 'none';
+};
+
+window.verifyAdminPin = async function(){
+  let pin = $('adminPinInput').value.trim();
+  if(pin === "0891"){
+    closeAdminModal();
+    try {
+      if (db) {
+        const colRef = collection(db, 'restaurant_math_scores_' + currentActiveTab);
+        const snapshot = await getDocs(colRef);
+        await Promise.all(snapshot.docs.map(d => deleteDoc(d.ref)));
+      }
+      localStorage.removeItem('restaurant_scores_' + currentActiveTab);
+      showCustomModal("Succès", `Scores réinitialisés (${currentActiveTab}) !`);
+      loadLeaderboard();
+    } catch(e) {}
+  } else {
+    showCustomModal("Erreur", "Code PIN incorrect !");
+  }
+};
+
+function showCustomModal(title, text){
+  const msg = $('message');
+  msg.style.display = 'block';
+  msg.innerHTML = `<h3>${title}</h3><p style="font-size:14px;margin:5px 0;">${text}</p><button class="answer" style="background:#5b2c83;color:#fff;padding:6px 14px;font-size:14px;margin-top:5px;" onclick="$('message').style.display='none'">Fermer</button>`;
+}
+
+function gcd(a,b){while(b){[a,b]=[b,a%b]}return a;}
+function lcm(a,b){return (a*b)/gcd(a,b);}
+
+function updateLivesDisplay(){
+  let html = '';
+  for(let i=1; i<=maxLives; i++){
+    if(i <= lives){
+      html += '<span style="color:red; text-shadow:0 0 2px rgba(0,0,0,0.5);">❤</span>';
+    } else {
+      html += '<span style="color:#777; opacity:0.4;">❤️</span>';
+    }
+  }
+  $('livesContainer').innerHTML = html;
+}
+
+function generateDynamicRounds() {
+  let rounds = [];
+  let fruitIcons = ['🍊', '🍌', '🍎', '🍐', '🍕', '🍰', '🍪', '🥪'];
+  const primes = [2,3,5,7,11,13,17,19,23,29];
+
+  function shuffledOptions(ans, numOpts, maxValue) {
+    let opts = [ans];
+    let pool = [];
+    let limit = Math.max(maxValue || 0, ans + 20, 30);
+    for(let n = 1; n <= limit; n++) {
+      if(n !== ans) pool.push(n);
+    }
+    pool.sort(() => Math.random() - 0.5);
+    for(let cand of pool) {
+      if(opts.length < numOpts && !opts.includes(cand)) opts.push(cand);
+      if(opts.length >= numOpts) break;
+    }
+    let offset = 1;
+    while(opts.length < numOpts && offset < 100) {
+      let candidates = [ans + offset, ans - offset];
+      for(let cand of candidates) {
+        if(cand > 0 && !opts.includes(cand)) opts.push(cand);
+        if(opts.length >= numOpts) break;
+      }
+      offset++;
+    }
+    return opts.sort((x,y) => x-y);
+  }
+
+  function makeAdvancedQuestion(i, type, numOpts, iconA, iconB) {
+    let a, b, ans, qText;
+    const finalRounds = difficulty === 'difficile' ? 6 : 4;
+    const finalStart = totalRounds - finalRounds;
+    const advancedIndex = i - finalStart;
+
+    if(type === 'PGCD') {
+      const pattern = advancedIndex % 3;
+      if(pattern === 0) {
+        // Deux nombres premiers : PGCD = 1
+        let p = primes[Math.floor(Math.random() * primes.length)];
+        let q = primes[Math.floor(Math.random() * primes.length)];
+        while(q === p) q = primes[Math.floor(Math.random() * primes.length)];
+        a = p; b = q; ans = 1;
+        qText = `Tour ${i+1} (PGCD) : Nous avons ${a} ${iconA} et ${b} ${iconB}. Ces deux nombres sont premiers. Quel est leur PGCD ?`;
+      } else if(pattern === 1) {
+        // Nombres premiers entre eux mais non tous deux premiers
+        let p = primes[1 + Math.floor(Math.random() * 5)];
+        let q = primes[2 + Math.floor(Math.random() * 5)];
+        while(p === q) q = primes[2 + Math.floor(Math.random() * 5)];
+        a = p * 2; b = q; ans = gcd(a,b);
+        qText = `Tour ${i+1} (PGCD) : Nous avons ${a} ${iconA} et ${b} ${iconB}. Quel est leur PGCD ?`;
+      } else {
+        // PGCD avec facteur commun plus difficile
+        let g = difficulty === 'difficile' ? [3,4,5,6][Math.floor(Math.random()*4)] : [2,3,4][Math.floor(Math.random()*3)];
+        let p = primes[1 + Math.floor(Math.random()*4)];
+        let q = primes[2 + Math.floor(Math.random()*4)];
+        while(p === q) q = primes[2 + Math.floor(Math.random()*4)];
+        a = g*p; b = g*q; ans = gcd(a,b);
+        qText = `Tour ${i+1} (PGCD) : Nous avons ${a} ${iconA} et ${b} ${iconB}. Quel est le plus grand nombre de clients pour un partage équitable sans reste ?`;
+      }
+    } else {
+      const pattern = advancedIndex % 3;
+      if(pattern === 0) {
+        // Un nombre est multiple de l'autre : PPCM = le plus grand
+        let small = difficulty === 'difficile' ? [4,5,6,7][Math.floor(Math.random()*4)] : [3,4,5][Math.floor(Math.random()*3)];
+        let multiplier = difficulty === 'difficile' ? [2,3,4][Math.floor(Math.random()*3)] : [2,3][Math.floor(Math.random()*2)];
+        a = small; b = small * multiplier; ans = b;
+        qText = `Tour ${i+1} (PPCM) : Les nombres ${a} et ${b} sont proposés. Quel est le plus petit total qui est un multiple de ${a} et de ${b} ?`;
+      } else if(pattern === 1) {
+        // Exemple de type 6 et 10 : facteur commun
+        let g = difficulty === 'difficile' ? [2,3,4,5][Math.floor(Math.random()*4)] : [2,3][Math.floor(Math.random()*2)];
+        let p = 3, q = 5;
+        a = g*p; b = g*q; ans = lcm(a,b);
+        qText = `Tour ${i+1} (PPCM) : Tables de ${a} et ${b} clients. Quel est le plus petit total de pièces nécessaire pour servir sans reste ?`;
+      } else {
+        // Deux nombres premiers distincts : PPCM = leur produit
+        let p = primes[1 + Math.floor(Math.random()*5)];
+        let q = primes[2 + Math.floor(Math.random()*5)];
+        while(q === p) q = primes[2 + Math.floor(Math.random()*5)];
+        a = p; b = q; ans = lcm(a,b);
+        qText = `Tour ${i+1} (PPCM) : Tables de ${a} et ${b} clients. Quel est le plus petit total commun sans reste ?`;
+      }
+    }
+
+    return { a, b, ans, qText, opts: shuffledOptions(ans, numOpts, Math.max(a,b,ans)) };
+  }
+
+  for(let i=0; i<totalRounds; i++){
+    let type = (i % 2 === 0) ? 'PGCD' : 'PPCM';
+    let iconA = fruitIcons[Math.floor(Math.random() * fruitIcons.length)];
+    let iconB = fruitIcons[Math.floor(Math.random() * fruitIcons.length)];
+    let numOpts = (difficulty === 'difficile') ? 5 : (difficulty === 'facile' ? 3 : 4);
+
+    let a, b, ans, qText, opts;
+    const finalRounds = difficulty === 'difficile' ? 6 : (difficulty === 'moyen' ? 4 : 0);
+
+    if(finalRounds > 0 && i >= totalRounds - finalRounds) {
+      let advanced = makeAdvancedQuestion(i, type, numOpts, iconA, iconB);
+      a = advanced.a;
+      b = advanced.b;
+      ans = advanced.ans;
+      qText = advanced.qText;
+      opts = advanced.opts;
+    } else if(type === 'PGCD'){
+      let gMin = (difficulty === 'facile') ? 2 : (difficulty === 'moyen' ? 2 : 3);
+      let gMax = (difficulty === 'facile') ? 4 : (difficulty === 'moyen' ? 5 : 6);
+      let g = Math.floor(Math.random() * (gMax - gMin + 1)) + gMin;
+
+      let mMin = 2, mMax = (difficulty === 'facile') ? 3 : (difficulty === 'moyen' ? 4 : 5);
+      let m1 = Math.floor(Math.random() * (mMax - mMin + 1)) + mMin;
+      let m2 = Math.floor(Math.random() * (mMax - mMin + 1)) + m1 + 1;
+
+      a = g * m1;
+      b = g * m2;
+      ans = gcd(a, b);
+      qText = `Tour ${i+1} (PGCD) : Nous avons ${a} ${iconA} et ${b} ${iconB}. Quel est le plus grand nombre de clients pour un partage équitable sans reste ?`;
+      opts = shuffledOptions(ans, numOpts, Math.max(a,b));
+    } else {
+      let aMin = (difficulty === 'facile') ? 2 : (difficulty === 'moyen' ? 2 : 3);
+      let aMax = (difficulty === 'facile') ? 4 : (difficulty === 'moyen' ? 5 : 6);
+      a = Math.floor(Math.random() * (aMax - aMin + 1)) + aMin;
+      b = Math.floor(Math.random() * (aMax - aMin + 1)) + aMin + 1;
+      if(a === b) b++;
+      ans = lcm(a, b);
+      qText = `Tour ${i+1} (PPCM) : Tables de ${a} et ${b} clients. Quel est le plus petit total de pièces nécessaire pour servir sans reste ?`;
+      opts = shuffledOptions(ans, numOpts, Math.max(a,b,ans));
+    }
+
+    rounds.push({ type, a, b, itemA: iconA, itemB: iconB, q: qText, ans, opts });
+  }
+  return rounds;
+}
+
+let gameRounds = [];
+
+function startRoundTimer() {
+  clearInterval(roundTimerInterval);
+  let baseTime = (difficulty === 'facile') ? 30 : (difficulty === 'moyen' ? 20 : 15);
+  let minTime = (difficulty === 'facile') ? 20 : (difficulty === 'moyen' ? 10 : 7);
+  
+  timeLeft = Math.max(minTime, baseTime - currentIdx);
+  $('roundTimer').textContent = timeLeft;
+
+  roundTimerInterval = setInterval(() => {
+    timeLeft--;
+    $('roundTimer').textContent = timeLeft;
+    if(timeLeft <= 0){
+      clearInterval(roundTimerInterval);
+      handleTimeOut();
+    }
+  }, 1000);
+}
+
+function handleTimeOut(){
+  if(busy) return;
+  busy = true;
+  document.querySelectorAll('.answer').forEach(b => b.disabled = true);
+  lives--;
+  updateLivesDisplay();
+
+  const r = currentRoundData;
+  showDetailedErrorModal(r, "Temps écoulé !", `Le temps imparti pour ce tour ${r.type} est expiré.`);
+}
+
+function loadRound(){
+  if(currentIdx >= gameRounds.length){ finishGame(false); return; }
+  busy = false;
+  currentRoundData = gameRounds[currentIdx];
+  const r = currentRoundData;
+
+  $('round').textContent = currentIdx + 1;
+  updateLivesDisplay();
+  $('score').textContent = score;
+  $('qBadge').textContent = r.type;
+  $('qText').textContent = r.q;
+  
+  if(r.type === 'PGCD'){
+    $('counterTitle').textContent = "Comptoir / Réserve";
+    $('trayBoxA').style.display = 'flex';
+    $('trayBoxB').style.display = 'flex';$('iconA').textContent = r.itemA;
+    $('iconB').textContent = r.itemB;
+    $('countA').textContent = r.a;
+    $('countB').textContent = r.b;
+  } else {
+    $('counterTitle').textContent = "Plateaux (PPCM)";
+    $('trayBoxA').style.display = 'flex';
+    $('trayBoxB').style.display = 'flex';$('iconA').textContent = r.itemA;
+    $('iconB').textContent = r.itemA;
+    $('countA').textContent = '0';
+    $('countB').textContent = '0';   }$('answers').innerHTML = '';
+  r.opts.forEach(val => {
+    const btn = document.createElement('button');
+    btn.className = 'answer';
+    btn.textContent = val;
+    btn.onclick = () => selectAnswer(val, r);
+    $('answers').appendChild(btn);
+  });
+
+  setupSceneStructure(r);
+  $('message').style.display = 'none';$('chef').style.left = '28%';
+  startRoundTimer();
+}
+
+function setupSceneStructure(r){
+  const zone = $('tableZone');
+  zone.innerHTML = '';
+  if(r.type === 'PPCM'){
+    zone.style.justifyContent = 'space-between';
+    zone.innerHTML = `
+      <div class="table-group">
+        <div class="table-title">Table 1 (${r.a} clients)</div>
+        <div class="clients-row" id="t1Clients"></div>
+      </div>
+      <div class="table-group">
+        <div class="table-title">Table 2 (${r.b} clients)</div>
+        <div class="clients-row" id="t2Clients"></div>
+      </div>
+    `;
+    for(let i=0; i<r.a; i++){
+      let c = document.createElement('div'); c.className = 'client';
+      c.innerHTML = `🧑<span class="plate" id="t1-p${i}">0</span>`;
+      $('t1Clients').appendChild(c);
+    }
+    for(let i=0; i<r.b; i++){
+      let c = document.createElement('div'); c.className = 'client';
+      c.innerHTML = `🧑<span class="plate" id="t2-p${i}">0</span>`;
+      $('t2Clients').appendChild(c);
+    }
+  } else {
+    zone.style.justifyContent = 'center';
+    zone.innerHTML = `<div class="table-group" style="min-width: 200px; max-width: 100%;"><div class="table-title">Espace Restaurant</div><div style="font-size:11px; padding:8px; color:#fbe3b5;">Choisis le nombre de clients ci-dessous</div></div>`;
+  }
+}
+
+function selectAnswer(chosenVal, r){
+  if(busy) return;
+  busy = true;
+  clearInterval(roundTimerInterval);
+  document.querySelectorAll('.answer').forEach(b => b.disabled = true);
+  
+  if(r.type === 'PGCD'){
+    const zone = $('tableZone');
+    zone.style.justifyContent = 'center';
+    zone.innerHTML = `<div class="table-group" style="max-width:100%;"><div class="table-title">Clients (${chosenVal})</div><div class="clients-row" id="pgcdClients"></div></div>`;
+    let clientPlates = [];
+    for(let i=0; i<chosenVal; i++){
+      let c = document.createElement('div'); c.className = 'client';
+      c.innerHTML = `🧑<span class="plate" id="pgcd-p${i}">0</span>`;
+      $('pgcdClients').appendChild(c);
+      clientPlates.push({aCount: 0, bCount: 0});
+    }
+    animatePGCDWithChefMovement(r, chosenVal, clientPlates);
+  } else {
+    animatePPCMWithChefMovement(r, chosenVal);
+  }
+}
+
+async function animatePGCDWithChefMovement(r, chosenVal, clientPlates){
+  const chef = $('chef');
+  let remA = r.a, remB = r.b;
+  let leavesNoRemainder = (r.a % chosenVal === 0 && r.b % chosenVal === 0);
+  let isOptimal = (chosenVal === r.ans);
+
+  for(let item=0; item<r.a; item++){
+    let targetClient = item % chosenVal;
+    let clientEl = document.getElementById(`pgcd-p${targetClient}`);
+    if(clientEl){
+      let rectLeft = clientEl.getBoundingClientRect().left;
+      let gameLeft = $('restaurant').getBoundingClientRect().left;
+      let posPercent = Math.max(20, Math.min(80, ((rectLeft - gameLeft) / $('restaurant').clientWidth) * 100));
+      chef.style.left = posPercent + '%';
+    }
+    await sleep(220);
+    remA--;
+    $('countA').textContent = remA;
+    clientPlates[targetClient].aCount++;
+    updatePlateDisplayPGCD(targetClient, clientPlates[targetClient], r);
+    await sleep(120);
+  }
+
+  for(let item=0; item<r.b; item++){
+    let targetClient = item % chosenVal;
+    let clientEl = document.getElementById(`pgcd-p${targetClient}`);
+    if(clientEl){
+      let rectLeft = clientEl.getBoundingClientRect().left;
+      let gameLeft = $('restaurant').getBoundingClientRect().left;
+      let posPercent = Math.max(20, Math.min(80, ((rectLeft - gameLeft) / $('restaurant').clientWidth) * 100));
+      chef.style.left = posPercent + '%';
+    }
+    await sleep(220);
+    remB--;
+    $('countB').textContent = remB;
+    clientPlates[targetClient].bCount++;
+    updatePlateDisplayPGCD(targetClient, clientPlates[targetClient], r);
+    await sleep(120);
+  }
+
+  chef.style.left = '45%';
+  await sleep(300);
+
+  if(leavesNoRemainder && isOptimal){
+    score += 10;
+    showSuccessModal(`✅ Succès !`, `Le PGCD de ${r.a} et ${r.b} est bien <b>${r.ans}</b>.<br>Le chef a distribué tous les articles équitablement sans aucun reste.`);
+  } else if(leavesNoRemainder && !isOptimal){
+    lives--;
+    updateLivesDisplay();
+    showDetailedErrorModal(r, "⚠️ Attention (Non optimal)", `Avec ${chosenVal} clients, la distribution fonctionne sans reste, <b>mais ce n'est pas le PLUS GRAND diviseur commun (PGCD)</b>.<br>Le PGCD de ${r.a} et ${r.b} est <b>${r.ans}</b>.`);
+  } else {
+    lives--;
+    updateLivesDisplay();
+    showDetailedErrorModal(r, "❌ Erreur de distribution", `Avec ${chosenVal} clients, la division laisse un reste ou les parts sont inégales !<br>Le PGCD de ${r.a} et ${r.b} est <b>${r.ans}</b>.`);
+  }
+}
+
+function updatePlateDisplayPGCD(idx, plateData, r) {
+  let el = document.getElementById(`pgcd-p${idx}`);
+  if(!el) return;
+  if(plateData.aCount > 10 || plateData.bCount > 10) {
+    el.textContent = `${plateData.aCount}${r.itemA}|${plateData.bCount}${r.itemB}`;
+  } else {
+    let strA = r.itemA.repeat(plateData.aCount);
+    let strB = r.itemB.repeat(plateData.bCount);
+    el.textContent = `${strA} ${strB}`;
+  }
+}
+
+async function animatePPCMWithChefMovement(r, chosenVal){
+  const chef = $('chef');
+  let leavesNoRemainder = (chosenVal % r.a === 0 && chosenVal % r.b === 0);
+  let isOptimal = (chosenVal === r.ans);
+
+  let tray1Count = chosenVal;
+  let tray2Count = chosenVal;
+  $('countA').textContent = tray1Count;
+  $('countB').textContent = tray2Count;
+
+  let itemsPerClientT1 = Math.floor(chosenVal / r.a);
+
+  for(let i=0; i<r.a; i++){
+    let el = document.getElementById(`t1-p${i}`);
+    if(el){
+      let rectLeft = el.getBoundingClientRect().left;
+      let gameLeft = $('restaurant').getBoundingClientRect().left;
+      let posPercent = Math.max(10, Math.min(45, ((rectLeft - gameLeft) / $('restaurant').clientWidth) * 100));
+      chef.style.left = posPercent + '%';
+    }
+    await sleep(250);
+    tray1Count = Math.max(0, tray1Count - itemsPerClientT1);
+    $('countA').textContent = tray1Count;
+    el.textContent = itemsPerClientT1 > 8 ? `${itemsPerClientT1} pcs` : r.itemA.repeat(itemsPerClientT1);
+    await sleep(120);
+  }
+
+  chef.style.left = '50%';
+  await sleep(300);
+
+  let itemsPerClientT2 = Math.floor(chosenVal / r.b);
+
+  for(let i=0; i<r.b; i++){
+    let el = document.getElementById(`t2-p${i}`);
+    if(el){
+      let rectLeft = el.getBoundingClientRect().left;
+      let gameLeft = $('restaurant').getBoundingClientRect().left;
+      let posPercent = Math.max(55, Math.min(90, ((rectLeft - gameLeft) / $('restaurant').clientWidth) * 100));
+      chef.style.left = posPercent + '%';
+    }
+    await sleep(250);
+    tray2Count = Math.max(0, tray2Count - itemsPerClientT2);
+    $('countB').textContent = tray2Count;
+    el.textContent = itemsPerClientT2 > 8 ? `${itemsPerClientT2} pcs` : r.itemA.repeat(itemsPerClientT2);
+    await sleep(120);
+  }
+
+  chef.style.left = '45%';
+  await sleep(300);
+
+  if(leavesNoRemainder && isOptimal){
+    score += 10;
+    showSuccessModal(`✅ Succès !`, `Le PPCM de ${r.a} et ${r.b} est bien <b>${r.ans}</b>.<br>Les plateaux ont permis de nourrir les deux tables exactement sans aucun reste.`);
+  } else if(leavesNoRemainder && !isOptimal){
+    lives--;
+    updateLivesDisplay();
+    showDetailedErrorModal(r, "⚠️ Attention (Non optimal)", `Le nombre ${chosenVal} est un multiple commun, <b>mais ce n'est pas le PLUS PETIT (PPCM)</b>.<br>Le PPCM recherché était <b>${r.ans}</b>.`);
+  } else {
+    lives--;
+    updateLivesDisplay();
+    showDetailedErrorModal(r, "❌ Erreur de distribution", `Ce total (${chosenVal}) laisse un reste sur l'une des tables !<br>Le PPCM de ${r.a} et ${r.b} est <b>${r.ans}</b>.`);
+  }
+}
+
+function showSuccessModal(title, text){
+  const msg = $('message');
+  msg.style.display = 'block';
+  msg.innerHTML = `<h3>${title}</h3><p style="font-size:13px;margin:4px 0;">${text}</p><button class="answer" style="background:#5b2c83;color:#fff;padding:6px 14px;font-size:14px;margin-top:4px;" onclick="proceedNextRound()">Continuer ➡</button>`;
+  $('score').textContent = score;
+  updateLivesDisplay();
+}
+
+function showDetailedErrorModal(r, title, explanation){
+  const msg = $('message');
+  msg.style.display = 'block';
+
+  let stepByStep = "";
+  if(r.type === 'PGCD'){
+    stepByStep = `<b>Explication pas à pas (PGCD) :</b> Diviseurs communs de ${r.a} et ${r.b}. Le plus grand est <b>${r.ans}</b>.`;
+  } else {
+    stepByStep = `<b>Explication pas à pas (PPCM) :</b> Multiples communs de ${r.a} et ${r.b}. Le plus petit est <b>${r.ans}</b>.`;
+  }
+
+  msg.innerHTML = `
+    <h3 style="color:red;margin:0 0 2px 0;font-size:14px;">${title}</h3>
+    <p style="font-size:12px;margin:2px 0;">${explanation}</p>
+    <div style="background:#f8dfa8;color:#222;padding:4px;border-radius:6px;font-size:11px;margin:3px 0;text-align:left;">${stepByStep}</div>
+    <button class="answer" style="background:#5b2c83;color:#fff;padding:6px 14px;font-size:14px;" onclick="proceedNextRound()">Compris, Continuer ➡️</button>
+  `;
+  $('score').textContent = score;
+  updateLivesDisplay();
+}
+
+window.proceedNextRound = function(){
+  $('message').style.display = 'none';
+  if(lives <= 0){
+    finishGame(true);
+  } else {
+    currentIdx++;
+    loadRound();
+  }
+};
+
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function finishGame(isLost){
+  clearInterval(roundTimerInterval);
+  saveScore(score);
+  $('answers').innerHTML = '';$('qBadge').textContent = isLost ? 'GAME OVER' : 'VICTOIRE !';
+  $('qText').textContent = isLost ? 'Vous avez perdu toutes vos vies.' : 'Félicitations, service terminé avec brio !';
+  
+  const msg = $('message');
+  msg.style.display = 'block';
+  msg.innerHTML = `🏆 <b>${playerName} (${playerClass})</b><br>Score final : ${score} points | Niveau : ${difficulty}<br><br><button class="answer" style="background:#5b2c83;color:#fff;padding:8px 16px;font-size:15px;" onclick="location.reload()">Rejouer 🔄</button>`;
+}
+
+$('startBtn').onclick = async () => {
+  let nameInput = $('playerNameInput').value.trim();
+  if(nameInput) playerName = nameInput;
+  playerClass = $('playerClassInput').value;
+  difficulty = $('playerDifficultyInput').value;
+  
+  if(difficulty === 'facile') { lives = 5; maxLives = 5; }
+  else if(difficulty === 'moyen') { lives = 4; maxLives = 4; }
+  else { lives = 3; maxLives = 3; }
+
+  $('playerNameDisplay').textContent = playerName;
+  $('playerClassDisplay').textContent = playerClass;
+  updateLivesDisplay();
+
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch(e) {}
+
+  gameStartTime = Date.now();
+  gameRounds = generateDynamicRounds();
+
+  $('overlay').style.display = 'none';
+  loadRound();
+};
+
+initFirebase();
+</script>
+</body>
+</html>
